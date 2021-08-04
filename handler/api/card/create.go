@@ -18,7 +18,7 @@ import (
 )
 
 type cardInput struct {
-	Schema json.RawMessage `json:"schema"`
+	Schema string          `json:"schema"`
 	Data   json.RawMessage `json:"data"`
 }
 
@@ -87,7 +87,7 @@ func HandleCreate(
 			Build:  build.ID,
 			Stage:  stage.ID,
 			Step:   step.ID,
-			Schema: string(in.Schema),
+			Schema: in.Schema,
 			Data:   string(in.Data),
 		}
 
