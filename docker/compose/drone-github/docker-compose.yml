@@ -1,29 +1,33 @@
 version: "3.8"
 services:
     drone:
-        image: drone/drone:latest
+        image: drone/drone:2.0.4
         ports:
-        - "8080:80"
+            - "8080:80"
         environment:
-        - DRONE_SERVER_HOST=localhost:8080
-        - DRONE_SERVER_PROTO=http
-        - DRONE_SERVER_PROXY_HOST=${DRONE_SERVER_PROXY_HOST}
-        - DRONE_SERVER_PROXY_PROTO=https
-        - DRONE_RPC_SECRET=bea26a2221fd8090ea38720fc445eca6
-        - DRONE_COOKIE_SECRET=e8206356c843d81e05ab6735e7ebf075
-        - DRONE_COOKIE_TIMEOUT=720h
-        - DRONE_GITHUB_CLIENT_ID=${DRONE_GITHUB_CLIENT_ID}
-        - DRONE_GITHUB_CLIENT_SECRET=${DRONE_GITHUB_CLIENT_SECRET}
-        - DRONE_LOGS_DEBUG=true
-        - DRONE_CRON_DISABLED=true
+            - DRONE_SERVER_HOST=localhost:8080
+            - DRONE_SERVER_PROTO=http
+            - DRONE_SERVER_PROXY_HOST=618167758bef.ngrok.io
+            - DRONE_SERVER_PROXY_PROTO=https
+            - DRONE_RPC_SECRET=bea26a2221fd8090ea38720fc445eca6
+            - DRONE_COOKIE_SECRET=e8206356c843d81e05ab6735e7ebf075
+            - DRONE_COOKIE_TIMEOUT=720h
+            - DRONE_GITHUB_CLIENT_ID=88aeb69697682d6c6126
+            - DRONE_GITHUB_CLIENT_SECRET=3ef0a533085b5bc4939e3db7b6d3471d5765af94
+            - DRONE_LOGS_DEBUG=true
+            - DRONE_CRON_DISABLED=true
+            - DRONE_INTERNAL_AUTH_SECRET=secret_key
+            - DRONE_USER_CREATE=username:eoinmcafee00,admin:true
         volumes:
-        - ./data:/data
+            - ./data:/data
     runner:
         image: drone/drone-runner-docker:latest
         environment:
-        - DRONE_RPC_HOST=drone
-        - DRONE_RPC_PROTO=http
-        - DRONE_RPC_SECRET=bea26a2221fd8090ea38720fc445eca6
-        - DRONE_TMATE_ENABLED=true
+            - DRONE_RPC_HOST=drone
+            - DRONE_RPC_PROTO=http
+            - DRONE_RPC_SECRET=bea26a2221fd8090ea38720fc445eca6
+            - DRONE_TMATE_ENABLED=true
+            - DRONE_SECRET_PLUGIN_TOKEN=129c4e338f9931a94c9c7671282650bb
+            - DRONE_INTERNAL_AUTH_SECRET=secret_key
         volumes:
-        - /var/run/docker.sock:/var/run/docker.sock
+            - /var/run/docker.sock:/var/run/docker.sock

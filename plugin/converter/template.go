@@ -17,11 +17,15 @@
 package converter
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
+	"path/filepath"
 	"regexp"
 	"strings"
+	"text/template"
 
 	"github.com/drone/drone/core"
 	"github.com/drone/drone/plugin/converter/jsonnet"
@@ -31,8 +35,8 @@ import (
 )
 
 var (
-	// templateFileRE regex to verifying kind is template.
-	templateFileRE          = regexp.MustCompile("^kind:\\s+template+\\n")
+	// TemplateFileRE regex to verifying kind is template.
+	TemplateFileRE          = regexp.MustCompile("^kind:\\s+template+\\n")
 	ErrTemplateNotFound     = errors.New("template converter: template name given not found")
 	ErrTemplateSyntaxErrors = errors.New("template converter: there is a problem with the yaml file provided")
 )
@@ -52,8 +56,9 @@ func (p *templatePlugin) Convert(ctx context.Context, req *core.ConvertArgs) (*c
 	if strings.HasSuffix(req.Repo.Config, ".yml") == false {
 		return nil, nil
 	}
+
 	// check kind is template
-	if templateFileRE.MatchString(req.Config.Data) == false {
+	if TemplateFileRE.MatchString(req.Config.Data) == false {
 		return nil, nil
 	}
 	// map to templateArgs
@@ -71,29 +76,50 @@ func (p *templatePlugin) Convert(ctx context.Context, req *core.ConvertArgs) (*c
 		return nil, err
 	}
 
-	// Check if file is of type Starlark
-	if strings.HasSuffix(templateArgs.Load, ".script") ||
-		strings.HasSuffix(templateArgs.Load, ".star") ||
-		strings.HasSuffix(templateArgs.Load, ".starlark") {
-
-		file, err := starlark.Parse(req, template, templateArgs.Data)
-		if err != nil {
-			return nil, err
-		}
-		return &core.Config{
-			Data: file,
-		}, nil
-	}
-	// Check if the file is of type Jsonnet
-	if strings.HasSuffix(templateArgs.Load, ".jsonnet") {
-		file, err := jsonnet.Parse(req, template, templateArgs.Data)
-		if err != nil {
-			return nil, err
-		}
-		return &core.Config{
-			Data: file,
-		}, nil
+	switch filepath.Ext(templateArgs.Load) {
+	case ".yml", ".yaml":
+		return parseYaml(template, templateArgs)
+	case ".star", ".starlark", ".script":
+		return parseStarlark(req, template, templateArgs)
+	case ".jsonnet":
+		return parseJsonnet(req, template, templateArgs)
+	default:
 	}
 
 	return nil, nil
+}
+
+func parseYaml(t *core.Template, templateArgs core.TemplateArgs) (*core.Config, error) {
+	tmpl, err := template.New(t.Name).Parse(t.Data)
+	if err != nil {
+		return nil, err
+	}
+	var out bytes.Buffer
+	err = tmpl.Execute(&out, templateArgs.Data)
+	if err != nil {
+		return nil, err
+	}
+	return &core.Config{
+		Data: fmt.Sprint(out),
+	}, nil
+}
+
+func parseJsonnet(req *core.ConvertArgs, template *core.Template, templateArgs core.TemplateArgs) (*core.Config, error) {
+	file, err := jsonnet.Parse(req, template, templateArgs.Data)
+	if err != nil {
+		return nil, err
+	}
+	return &core.Config{
+		Data: file,
+	}, nil
+}
+
+func parseStarlark(req *core.ConvertArgs, template *core.Template, templateArgs core.TemplateArgs) (*core.Config, error) {
+	file, err := starlark.Parse(req, template, templateArgs.Data)
+	if err != nil {
+		return nil, err
+	}
+	return &core.Config{
+		Data: file,
+	}, nil
 }
